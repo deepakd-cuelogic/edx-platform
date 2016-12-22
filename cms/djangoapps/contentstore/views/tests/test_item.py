@@ -20,7 +20,8 @@ from contentstore.views.component import (
 )
 
 from contentstore.views.item import (
-    create_xblock_info, ALWAYS, VisibilityState, _xblock_type_and_display_name, add_container_page_publishing_info
+    create_xblock_info, get_xblock_summary, xblock_summary, ALWAYS, VisibilityState, _xblock_type_and_display_name,
+    add_container_page_publishing_info
 )
 from contentstore.tests.utils import CourseTestCase
 from student.tests.factories import UserFactory
@@ -678,6 +679,68 @@ class TestDuplicateItem(ItemTest, DuplicateHelper):
 
         # Now send a custom display name for the duplicate.
         verify_name(self.seq_usage_key, self.chapter_usage_key, "customized name", display_name="customized name")
+
+
+class TestMoveItem(ItemTest):
+    """
+    Tests for move item.
+    """
+    def setUp(self):
+        """
+        Creates the test course structure and a few components to 'move'.
+        """
+        super(TestMoveItem, self).setUp()
+
+        # Create a parent chapter
+        resp = self.create_xblock(parent_usage_key=self.usage_key, category='chapter')
+        self.chapter_usage_key = self.response_usage_key(resp)
+
+        # create a sequential
+        resp = self.create_xblock(parent_usage_key=self.chapter_usage_key, category='sequential')
+        self.seq_usage_key = self.response_usage_key(resp)
+
+        resp = self.create_xblock(parent_usage_key=self.chapter_usage_key, category='sequential')
+        self.seq2_usage_key = self.response_usage_key(resp)
+
+        # create a vertical
+        resp = self.create_xblock(parent_usage_key=self.seq_usage_key, category='vertical')
+        self.vert_usage_key = self.response_usage_key(resp)
+
+        resp = self.create_xblock(parent_usage_key=self.seq_usage_key, category='vertical')
+        self.vert2_usage_key = self.response_usage_key(resp)
+
+        # create problem and an html component
+        resp = self.create_xblock(parent_usage_key=self.vert_usage_key, category='problem',
+                                  boilerplate='multiplechoice.yaml')
+        self.problem_usage_key = self.response_usage_key(resp)
+
+        resp = self.create_xblock(parent_usage_key=self.vert_usage_key, category='html')
+        self.html_usage_key = self.response_usage_key(resp)
+
+    def assert_xblock_summary(self, xblock, xblock_info):
+        """
+        Assert we have correct xblock info.
+        """
+        self.assertEqual(unicode(xblock.location), xblock_info['location'])
+        self.assertEqual(xblock.display_name, xblock_info['display_name'])
+        self.assertEqual(xblock.category, xblock_info['category'])
+        self.assertEqual(len(xblock.children), len(xblock_info.get('child_info', [])))
+        for child_usage_key in xblock.children:
+            child_xblock = self.get_item_from_modulestore(child_usage_key)
+            child_info = xblock_summary(child_xblock)
+            self.assertEqual(unicode(child_xblock.location), child_info['location'])
+            self.assertEqual(child_xblock.display_name, child_info['display_name'])
+            self.assertEqual(child_xblock.category, child_info['category'])
+            self.assertNotIn('child_info', child_info)
+
+    def test_xblock_summary(self):
+        """
+        Test that we get correct summary info of an xblock.
+        """
+        for usage_key in (self.chapter_usage_key, self.seq_usage_key, self.seq2_usage_key):
+            xblock = self.get_item_from_modulestore(usage_key)
+            xblock_info = get_xblock_summary(xblock)
+            self.assert_xblock_summary(xblock, xblock_info)
 
 
 class TestDuplicateItemWithAsides(ItemTest, DuplicateHelper):

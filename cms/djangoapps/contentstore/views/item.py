@@ -1250,3 +1250,35 @@ def _xblock_type_and_display_name(xblock):
     return _('{section_or_subsection} "{display_name}"').format(
         section_or_subsection=xblock_type_display_name(xblock),
         display_name=xblock.display_name_with_default)
+
+
+def xblock_summary(xblock, child_info=None):
+    """
+    Returns a summarized dict of an xblock.
+    """
+    xblock_info = {
+        'location': unicode(xblock.location),
+        'display_name': xblock.display_name,
+        'category': xblock.category
+    }
+    if child_info:
+        xblock_info['child_info'] = child_info
+    return xblock_info
+
+
+def get_xblock_summary(xblock):
+    """
+    Returns the summary of of an xblock.
+    """
+    child_info = get_xblock_child_summary(xblock)
+    return xblock_summary(xblock, child_info)
+
+
+def get_xblock_child_summary(xblock):
+    """
+    Returns the summary of children of an xblock.
+    """
+    child_info = []
+    for child in xblock.get_children():
+        child_info.append(xblock_summary(child))
+    return child_info
