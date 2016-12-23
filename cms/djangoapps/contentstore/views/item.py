@@ -1266,6 +1266,18 @@ def xblock_summary(xblock, child_info=None):
     return xblock_info
 
 
+def get_tree_data(course_usage_key, item_usage_key):
+    store = modulestore()
+    xblock = store.get_item(item_usage_key)
+    xblock_info = xblock_summary(xblock)
+    course = store.get_item(course_usage_key)
+    course_outline = get_xblock_summary(course)
+    return {
+        'course_outline': course_outline,
+        'xblock_info':xblock_info
+    }
+
+
 def get_xblock_summary(xblock):
     """
     Returns the summary of of an xblock.
@@ -1280,5 +1292,5 @@ def get_xblock_child_summary(xblock):
     """
     child_info = []
     for child in xblock.get_children():
-        child_info.append(xblock_summary(child))
+        child_info.append(get_xblock_summary(child))
     return child_info
