@@ -692,29 +692,29 @@ class TestMoveItem(ItemTest):
         super(TestMoveItem, self).setUp()
 
         # Create a parent chapter
-        resp = self.create_xblock(parent_usage_key=self.usage_key, category='chapter')
+        resp = self.create_xblock(parent_usage_key=self.usage_key, display_name='chapter1', category='chapter')
         self.chapter_usage_key = self.response_usage_key(resp)
 
         # create a sequential
-        resp = self.create_xblock(parent_usage_key=self.chapter_usage_key, category='sequential')
+        resp = self.create_xblock(parent_usage_key=self.chapter_usage_key, display_name='seq1', category='sequential')
         self.seq_usage_key = self.response_usage_key(resp)
 
-        resp = self.create_xblock(parent_usage_key=self.chapter_usage_key, category='sequential')
+        resp = self.create_xblock(parent_usage_key=self.chapter_usage_key, display_name='seq2',  category='sequential')
         self.seq2_usage_key = self.response_usage_key(resp)
 
         # create a vertical
-        resp = self.create_xblock(parent_usage_key=self.seq_usage_key, category='vertical')
+        resp = self.create_xblock(parent_usage_key=self.seq_usage_key, display_name='vertical1',  category='vertical')
         self.vert_usage_key = self.response_usage_key(resp)
 
-        resp = self.create_xblock(parent_usage_key=self.seq_usage_key, category='vertical')
+        resp = self.create_xblock(parent_usage_key=self.seq_usage_key, display_name='vertical2',  category='vertical')
         self.vert2_usage_key = self.response_usage_key(resp)
 
         # create problem and an html component
-        resp = self.create_xblock(parent_usage_key=self.vert_usage_key, category='problem',
+        resp = self.create_xblock(parent_usage_key=self.vert_usage_key, display_name='problem1',  category='problem',
                                   boilerplate='multiplechoice.yaml')
         self.problem_usage_key = self.response_usage_key(resp)
 
-        resp = self.create_xblock(parent_usage_key=self.vert_usage_key, category='html')
+        resp = self.create_xblock(parent_usage_key=self.vert_usage_key, display_name='html1',  category='html')
         self.html_usage_key = self.response_usage_key(resp)
 
     def assert_xblock_info(self, xblock, xblock_info):
@@ -728,26 +728,26 @@ class TestMoveItem(ItemTest):
 
     def assert_course_outline(self, course_outline):
         """
-        Assert we have correct xblock info.
+        Assert we have correct course outline data.
         """
         course = self.get_item_from_modulestore(self.usage_key)
         self.assert_xblock_child_info(course, course_outline)
 
     def assert_xblock_child_info(self, xblock, xblock_info):
         """
-        Assert we have correct xblock info.
+        Assert we have correct child xblock info.
         """
         for child in xblock.get_children():
             child_info = get_xblock_summary(child)
             self.assert_xblock_info(child, child_info)
             self.assert_xblock_child_info(child, child_info)
 
-    def test_xblock_summary(self):
+    def test_tree_data(self):
         """
         Test that we get correct summary info of an xblock.
         """
         for usage_key in (self.html_usage_key, self.problem_usage_key):
-            tree_data = get_tree_data(self.chapter_usage_key, usage_key)
+            tree_data = get_tree_data(self.usage_key, usage_key)
             xblock = self.get_item_from_modulestore(usage_key)
             self.assert_xblock_info(xblock, tree_data['xblock_info'])
             self.assert_course_outline(tree_data['course_outline'])

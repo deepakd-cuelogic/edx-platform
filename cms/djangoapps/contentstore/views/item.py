@@ -1282,15 +1282,7 @@ def get_xblock_summary(xblock):
     """
     Returns the summary of of an xblock.
     """
-    child_info = get_xblock_child_summary(xblock)
-    return xblock_summary(xblock, child_info)
-
-
-def get_xblock_child_summary(xblock):
-    """
-    Returns the summary of children of an xblock.
-    """
     child_info = []
     for child in xblock.get_children():
         child_info.append(get_xblock_summary(child))
-    return child_info
+    return xblock_summary(xblock, child_info)
