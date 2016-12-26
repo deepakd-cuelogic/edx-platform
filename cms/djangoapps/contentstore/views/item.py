@@ -145,12 +145,19 @@ def xblock_handler(request, usage_key_string):
             accept_header = request.META.get('HTTP_ACCEPT', 'application/json')
 
             if 'application/json' in accept_header:
+                store = modulestore()
                 fields = request.GET.get('fields', '').split(',')
                 if 'graderType' in fields:
                     # right now can't combine output of this w/ output of _get_module_info, but worthy goal
                     return JsonResponse(CourseGradingModel.get_section_grader_type(usage_key))
+                if 'course_tree' in request.GET:
+                    xblock = _get_xblock(usage_key, request.user)
+                    course = store.get_course(xblock.location.course_key)   # pylint: disable=no-member
+                    xblock_info = xblock_summary(xblock)
+                    course_outline = get_xblock_outline(course)
+                    return JsonResponse({'course_outline': course_outline, 'xblock_info': xblock_info})
                 # TODO: pass fields to _get_module_info and only return those
-                with modulestore().bulk_operations(usage_key.course_key):
+                with store.bulk_operations(usage_key.course_key):
                     response = _get_module_info(_get_xblock(usage_key, request.user))
                 return JsonResponse(response)
             else:
@@ -1266,23 +1273,11 @@ def xblock_summary(xblock, child_info=None):
     return xblock_info
 
 
-def get_tree_data(course_usage_key, item_usage_key):
-    store = modulestore()
-    xblock = store.get_item(item_usage_key)
-    xblock_info = xblock_summary(xblock)
-    course = store.get_item(course_usage_key)
-    course_outline = get_xblock_summary(course)
-    return {
-        'course_outline': course_outline,
-        'xblock_info':xblock_info
-    }
-
-
-def get_xblock_summary(xblock):
+def get_xblock_outline(xblock):
     """
-    Returns the summary of of an xblock.
+    Returns the complete outline of of an xblock.
     """
     child_info = []
     for child in xblock.get_children():
-        child_info.append(get_xblock_summary(child))
+        child_info.append(get_xblock_outline(child))
     return xblock_summary(xblock, child_info)
