@@ -203,16 +203,16 @@ class SequenceModule(SequenceFields, ProctoringFields, XModule):
         raise NotFoundError('Unexpected dispatch type')
 
     @classmethod
-    def verify_current_content_visibility(cls, due, hide_after_due):
+    def verify_current_content_visibility(cls, date, hide_after_date):
         """
         Returns whether the content visibility policy passes
         for the given due date and hide_after_due values and
         the current date-time.
         """
         return (
-            not due or
-            not hide_after_due or
-            datetime.now(UTC()) < due
+            not date or
+            not hide_after_date or
+            datetime.now(UTC()) < date
         )
 
     def student_view(self, context):
@@ -260,6 +260,7 @@ class SequenceModule(SequenceFields, ProctoringFields, XModule):
             hidden_content_html = self.system.render_template(
                 'hidden_content.html',
                 {
+                    'self_paced': getattr(self, 'self_paced', False),
                     'subsection_format': subsection_format,
                     'progress_url': context.get('progress_url'),
                 }
@@ -286,9 +287,10 @@ class SequenceModule(SequenceFields, ProctoringFields, XModule):
         Returns whether the runtime user can view the content
         of this sequential.
         """
+        date = self._get_course().end if getattr(self, 'self_paced', False) else self.due
         return (
             self.runtime.user_is_staff or
-            self.verify_current_content_visibility(self.due, self.hide_after_due)
+            self.verify_current_content_visibility(date, self.hide_after_due)
         )
 
     def _student_view(self, context, banner_text=None):
