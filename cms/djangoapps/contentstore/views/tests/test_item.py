@@ -20,7 +20,7 @@ from contentstore.views.component import (
 )
 
 from contentstore.views.item import (
-    create_xblock_info, ALWAYS, VisibilityState, _xblock_type_and_display_name, add_container_page_publishing_info
+    create_xblock_info, _get_source_index, ALWAYS, VisibilityState, _xblock_type_and_display_name, add_container_page_publishing_info
 )
 from contentstore.tests.utils import CourseTestCase
 from student.tests.factories import UserFactory
@@ -737,11 +737,14 @@ class TestMoveItem(ItemTest):
         Assert move component.
         """
         parent_loc = self.store.get_parent_location(source_usage_key)
+        actual_souce_index = _get_source_index(source_usage_key)
         response = self._move_component(source_usage_key, dest_usage_key, source_index)
         self.assertEqual(response.status_code, 200)
         response = json.loads(response.content)
-        self.assertEqual(response['locator'], unicode(source_usage_key))
-        self.assertEqual(response['courseKey'], unicode(self.course_key))
+        self.assertEqual(response['move_source_locator'], unicode(source_usage_key))
+        self.assertEqual(response['dest_source_locator'], unicode(dest_usage_key))
+        source_index = source_index if source_index is not None else actual_souce_index
+        self.assertEqual(response['source_index'], source_index)
         new_parent_loc = self.store.get_parent_location(source_usage_key)
         self.assertEqual(new_parent_loc, dest_usage_key)
         self.assertNotEqual(parent_loc, new_parent_loc)

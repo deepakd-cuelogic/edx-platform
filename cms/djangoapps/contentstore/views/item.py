@@ -19,6 +19,8 @@ from django.views.decorators.http import require_http_methods
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import LibraryUsageLocator
 from pytz import UTC
+
+from xblock.core import XBlock
 from xblock.fields import Scope
 from xblock.fragment import Fragment
 from xblock_django.user_service import DjangoXBlockUserService
@@ -220,9 +222,14 @@ def xblock_handler(request, usage_key_string):
                     dest_type=dest_parent_usage_key.block_type,
                 )
                 return JsonResponse({'error': error}, status=400)
-
+            actual_source_index = _get_source_index(move_source_usage_key)
             _move_item(move_source_usage_key, dest_parent_usage_key, request.user, source_index)
-            return JsonResponse({'locator': unicode(move_source_usage_key), 'courseKey': unicode(source_course)})
+            context = {
+                'move_source_locator': unicode(move_source_usage_key),
+                'dest_source_locator': unicode(dest_parent_usage_key),
+                'source_index': source_index if source_index is not None else actual_source_index
+            }
+            return JsonResponse(context)
         else:
             return _create_item(request)
     else:
@@ -660,6 +667,16 @@ def _create_item(request):
     return JsonResponse(
         {'locator': unicode(created_block.location), 'courseKey': unicode(created_block.location.course_key)}
     )
+
+
+def _get_source_index(source_usage_key):
+    """
+    Get source index position of the xblock.
+    """
+    store = modulestore()
+    source_item = store.get_item(source_usage_key)
+    source_parent = source_item.get_parent()
+    return source_parent.children.index(source_usage_key)
 
 
 def is_valid_move(source_usage_key, dest_parent_usage_key):
