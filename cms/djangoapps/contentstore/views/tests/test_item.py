@@ -680,6 +680,137 @@ class TestDuplicateItem(ItemTest, DuplicateHelper):
         verify_name(self.seq_usage_key, self.chapter_usage_key, "customized name", display_name="customized name")
 
 
+class TestMoveItem(ItemTest):
+    """
+    Tests for move item.
+    """
+    def setUp(self):
+        """
+        Creates the test course structure and a few components to 'move'.
+        """
+        super(TestMoveItem, self).setUp()
+
+        # Create a parent chapter
+        resp = self.create_xblock(parent_usage_key=self.usage_key, display_name='chapter1', category='chapter')
+        self.chapter_usage_key = self.response_usage_key(resp)
+
+        resp = self.create_xblock(parent_usage_key=self.usage_key, display_name='chapter2', category='chapter')
+        self.chapter2_usage_key = self.response_usage_key(resp)
+
+        # create a sequential
+        resp = self.create_xblock(parent_usage_key=self.chapter_usage_key, display_name='seq1', category='sequential')
+        self.seq_usage_key = self.response_usage_key(resp)
+
+        resp = self.create_xblock(parent_usage_key=self.chapter_usage_key, display_name='seq2', category='sequential')
+        self.seq2_usage_key = self.response_usage_key(resp)
+
+        # create a vertical
+        resp = self.create_xblock(parent_usage_key=self.seq_usage_key, display_name='vertical1', category='vertical')
+        self.vert_usage_key = self.response_usage_key(resp)
+
+        resp = self.create_xblock(parent_usage_key=self.seq_usage_key, display_name='vertical2', category='vertical')
+        self.vert2_usage_key = self.response_usage_key(resp)
+
+        # create problem and an html component
+        resp = self.create_xblock(parent_usage_key=self.vert_usage_key, display_name='problem1', category='problem',
+                                  boilerplate='multiplechoice.yaml')
+        self.problem_usage_key = self.response_usage_key(resp)
+
+        resp = self.create_xblock(parent_usage_key=self.vert_usage_key, display_name='html1', category='html')
+        self.html_usage_key = self.response_usage_key(resp)
+
+    def _move_component(self, source_usage_key, dest_usage_key, source_index=None):
+        """
+        Helper method to send move request and returns the response
+        """
+        data = {
+            'move_source_locator': unicode(source_usage_key),
+            'dest_source_locator': unicode(dest_usage_key)
+        }
+        if source_index is not None:
+            data['source_index'] = source_index
+        resp = self.client.ajax_post(reverse('contentstore.views.xblock_handler'), json.dumps(data))
+        return resp
+
+    def assert_move_item(self, source_usage_key, dest_usage_key, source_index=None):
+        """
+        Assert move component.
+        """
+        parent_loc = self.store.get_parent_location(source_usage_key)
+        response = self._move_component(source_usage_key, dest_usage_key, source_index)
+        self.assertEqual(response.status_code, 200)
+        response = json.loads(response.content)
+        self.assertEqual(response['locator'], unicode(source_usage_key))
+        self.assertEqual(response['courseKey'], unicode(self.course_key))
+        new_parent_loc = self.store.get_parent_location(source_usage_key)
+        self.assertEqual(new_parent_loc, dest_usage_key)
+        self.assertNotEqual(parent_loc, new_parent_loc)
+
+    def test_move_component(self):
+        """
+        Test move component with different xblock types.
+        """
+        for source_usage_key, dest_usage_key in [
+                (self.html_usage_key, self.vert2_usage_key),
+                (self.vert_usage_key, self.seq2_usage_key),
+                (self.seq_usage_key, self.chapter2_usage_key)
+        ]:
+            self.assert_move_item(source_usage_key, dest_usage_key)
+
+    def test_move_source_index(self):
+        """
+        Test moving an item to a particular index.
+        """
+        parent = self.get_item_from_modulestore(self.vert_usage_key)
+        children = parent.get_children()
+        self.assertEqual(len(children), 2)
+
+        # Create a component within vert2.
+        resp = self.create_xblock(parent_usage_key=self.vert2_usage_key, display_name='html2', category='html')
+        html2_usage_key = self.response_usage_key(resp)
+
+        # Move html2_usage_key inside vert_usage_key at second position.
+        self.assert_move_item(html2_usage_key, self.vert_usage_key, 1)
+        parent = self.get_item_from_modulestore(self.vert_usage_key)
+        children = parent.get_children()
+        self.assertEqual(len(children), 3)
+        self.assertEqual(children[1].location, html2_usage_key)
+
+    def test_move_undo(self):
+        """
+        Test move a component and move it back (undo).
+        """
+        self.assert_move_item(self.html_usage_key, self.vert2_usage_key)
+        self.assert_move_item(self.html_usage_key, self.vert_usage_key)
+
+    def test_move_moved_parent(self):
+        """
+        Test move a moved parents.
+        """
+        self.assert_move_item(self.vert_usage_key, self.seq2_usage_key)
+        self.assert_move_item(self.seq2_usage_key, self.chapter2_usage_key)
+
+        # check vert_usage_key has seq2_usage_key as parent
+        self.assertEqual(self.store.get_parent_location(self.vert_usage_key), self.seq2_usage_key)
+
+    def test_invalid_move(self):
+        """
+        Test invalid move.
+        """
+        parent_loc = self.store.get_parent_location(self.chapter_usage_key)
+        response = self._move_component(self.chapter_usage_key, self.usage_key)
+        self.assertEqual(response.status_code, 400)
+        response = json.loads(response.content)
+
+        expected_error = 'You can not move {source_type} into {dest_type}'.format(
+            source_type=self.chapter_usage_key.block_type,
+            dest_type=self.usage_key.block_type
+        )
+        self.assertEqual(expected_error, response['error'])
+        new_parent_loc = self.store.get_parent_location(self.chapter_usage_key)
+        self.assertEqual(new_parent_loc, parent_loc)
+
+
 class TestDuplicateItemWithAsides(ItemTest, DuplicateHelper):
     """
     Test the duplicate method for blocks with asides.
