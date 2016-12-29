@@ -12,7 +12,7 @@ class @Sequence
     @ajaxUrl = @el.data('ajax-url')
     @nextUrl = @el.data('next-url')
     @prevUrl = @el.data('prev-url')
-    @base_page_title = " | " + document.title
+
     @initProgress()
     @bind()
     @render parseInt(@el.data('position'))
@@ -40,7 +40,14 @@ class @Sequence
     # update the page title to include the current section
     position_link = @link_for(@position)
     if position_link and position_link.data('page-title')
-        document.title = position_link.data('page-title') + @base_page_title
+      currentSectionTitle = position_link.data('page-title')
+
+    if not @base_page_title
+      @base_page_title = document.title.replace(currentSectionTitle, '')
+
+    if currentSectionTitle != @currentSectionTitle
+      @currentSectionTitle = currentSectionTitle
+      document.title = @currentSectionTitle + @base_page_title
 
   hookUpContentStateChangeEvent: ->
     $('.problems-wrapper').bind(
@@ -252,7 +259,7 @@ class @Sequence
       window.location.href = @prevUrl
     else
       # If the bottom nav is used, scroll to the top of the page on change.
-      if is_bottom_nav 
+      if is_bottom_nav
         $.scrollTo 0, 150
       offset =
         next: 1
