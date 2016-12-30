@@ -98,6 +98,7 @@ def xblock_handler(request, usage_key_string):
     GET
         json: returns representation of the xblock (locator id, data, and metadata).
               if ?fields=graderType, it returns the graderType for the unit instead of the above.
+              if ?course_tree=1, it returns the a course_outline summary and XBlock summary.
         html: returns HTML for rendering the xblock (which includes both the "preview" view and the "editor" view)
     PUT or POST or PATCH
         json: if xblock locator is specified, update the xblock instance. The json payload can contain
@@ -150,11 +151,11 @@ def xblock_handler(request, usage_key_string):
                 if 'graderType' in fields:
                     # right now can't combine output of this w/ output of _get_module_info, but worthy goal
                     return JsonResponse(CourseGradingModel.get_section_grader_type(usage_key))
-                if 'course_tree' in request.GET:
+                if int(request.GET.get('course_tree', 0)):
                     xblock = _get_xblock(usage_key, request.user)
                     course = store.get_course(xblock.location.course_key)   # pylint: disable=no-member
                     xblock_info = xblock_summary(xblock)
-                    course_outline = get_xblock_outline(course)
+                    course_outline = xblock_summary(course, include_children=True)
                     return JsonResponse({'course_outline': course_outline, 'xblock_info': xblock_info})
                 # TODO: pass fields to _get_module_info and only return those
                 with store.bulk_operations(usage_key.course_key):
@@ -1259,25 +1260,54 @@ def _xblock_type_and_display_name(xblock):
         display_name=xblock.display_name_with_default)
 
 
-def xblock_summary(xblock, child_info=None):
+def xblock_summary(xblock, include_children=False):
     """
     Returns a summarized dict of an xblock.
+
+    Arguments:
+        xblock (Xblock): An XBlock whose summary is to be made.
+        include_children (bool): If True, includes child XBlocks information.
+        child_info (List): A list of info of children of the XBlock
+                          If None, child_info is not attached to summary.
+
+    Returns:
+        xblock_info(dict): A dict containing basic information about the XBlock.
+
+        A sample output may look like :
+        {
+            'category': 'sequential',
+            'display_name': 'seq1',
+            'location': 'i4x://org.0/course_0/sequential/5e828fac0c0d40879efeda6e3b6d1db5',
+            'child_info': [
+                {
+                    'category': 'vertical',
+                    'display_name': 'vertical1',
+                    'location': 'i4x://org.0/course_0/vertical/81ded1bb165e4b6fa19623911869a89d',
+                    'child_info': [
+                        {
+                            'category': 'problem',
+                            'display_name': 'problem1',
+                            'location': 'i4x://org.0/course_0/problem/2df788b55e0848e596859a20010c9f71'
+                        }, {
+                            'category': 'html',
+                            'display_name': 'html1',
+                            'location': 'i4x://org.0/course_0/html/7d74d1987128499d96530ac3e431eb1c'
+                        }
+                    ]
+                },
+                {
+                    'category': 'vertical',
+                    'display_name': 'vertical2',
+                    'location': 'i4x://org.0/course_0/vertical/81ded1bb165e4b6fa19623911869a8d2'
+                }
+            ]
+        }
     """
     xblock_info = {
         'location': unicode(xblock.location),
         'display_name': xblock.display_name,
         'category': xblock.category
     }
-    if child_info:
-        xblock_info['child_info'] = child_info
+    if include_children and xblock.has_children:
+        xblock_info['child_info'] = [xblock_summary(child) for child in xblock.get_children()]
     return xblock_info
-
-
-def get_xblock_outline(xblock):
-    """
-    Returns the complete outline of of an xblock.
-    """
-    child_info = []
-    for child in xblock.get_children():
-        child_info.append(get_xblock_outline(child))
-    return xblock_summary(xblock, child_info)
