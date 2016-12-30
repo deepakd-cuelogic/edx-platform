@@ -671,7 +671,13 @@ def _create_item(request):
 
 def _get_source_index(source_usage_key):
     """
-    Get source index position of the xblock.
+    Get source index position of the XBlock.
+
+    Arguments:
+        source_usage_key (BlockUsageLocator): Locator of source item.
+
+    Returns:
+        source_index (int): Index position of the xblock in a parent.
     """
     store = modulestore()
     source_item = store.get_item(source_usage_key)
@@ -682,6 +688,13 @@ def _get_source_index(source_usage_key):
 def is_valid_move(source_usage_key, dest_parent_usage_key):
     """
     Checks if move operation is valid or not.
+
+    Arguments:
+        source_usage_key (BlockUsageLocator): Locator of source item.
+        dest_parent_usage_key (BlockUsageLocator): Locator of destination item.
+
+    Returns:
+       True if valid move action otherwise False.
     """
     source_type = source_usage_key.block_type
     dest_type = dest_parent_usage_key.block_type
@@ -700,6 +713,11 @@ def _move_item(source_usage_key, dest_parent_usage_key, user, source_index=None)
     Move an existing xblock as a child of the supplied dest_parent_usage_key
 
     If source_index is provided, xblock would be placed under dest_parent_usage_key on that particular position.
+
+    Arguments:
+            source_usage_key (BlockUsageLocator): Locator of source item.
+            dest_usage_key (BlockUsageLocator): Locator of destination item.
+            source_index (int): If provided, insert source item at the provided index location in dest_usage_key item.
     """
     store = modulestore()
     source_item = store.get_item(source_usage_key)

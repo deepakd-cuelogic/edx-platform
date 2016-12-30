@@ -20,7 +20,8 @@ from contentstore.views.component import (
 )
 
 from contentstore.views.item import (
-    create_xblock_info, _get_source_index, ALWAYS, VisibilityState, _xblock_type_and_display_name, add_container_page_publishing_info
+    create_xblock_info, _get_source_index, ALWAYS, VisibilityState, _xblock_type_and_display_name,
+    add_container_page_publishing_info
 )
 from contentstore.tests.utils import CourseTestCase
 from student.tests.factories import UserFactory
@@ -686,42 +687,49 @@ class TestMoveItem(ItemTest):
     """
     def setUp(self):
         """
-        Creates the test course structure and a few components to 'move'.
+        Creates the test course structure to build course outline tree.
         """
         super(TestMoveItem, self).setUp()
 
         # Create a parent chapter
-        resp = self.create_xblock(parent_usage_key=self.usage_key, display_name='chapter1', category='chapter')
-        self.chapter_usage_key = self.response_usage_key(resp)
+        chapter1 = self.create_xblock(parent_usage_key=self.course.location, display_name='chapter1', category='chapter')
+        self.chapter_usage_key = self.response_usage_key(chapter1)
 
-        resp = self.create_xblock(parent_usage_key=self.usage_key, display_name='chapter2', category='chapter')
-        self.chapter2_usage_key = self.response_usage_key(resp)
+        chapter2 = self.create_xblock(parent_usage_key=self.course.location, display_name='chapter2', category='chapter')
+        self.chapter2_usage_key = self.response_usage_key(chapter2)
 
         # create a sequential
-        resp = self.create_xblock(parent_usage_key=self.chapter_usage_key, display_name='seq1', category='sequential')
-        self.seq_usage_key = self.response_usage_key(resp)
+        seq1 = self.create_xblock(parent_usage_key=self.chapter_usage_key, display_name='seq1', category='sequential')
+        self.seq_usage_key = self.response_usage_key(seq1)
 
-        resp = self.create_xblock(parent_usage_key=self.chapter_usage_key, display_name='seq2', category='sequential')
-        self.seq2_usage_key = self.response_usage_key(resp)
+        seq2 = self.create_xblock(parent_usage_key=self.chapter_usage_key, display_name='seq2', category='sequential')
+        self.seq2_usage_key = self.response_usage_key(seq2)
 
         # create a vertical
-        resp = self.create_xblock(parent_usage_key=self.seq_usage_key, display_name='vertical1', category='vertical')
-        self.vert_usage_key = self.response_usage_key(resp)
+        vert1 = self.create_xblock(parent_usage_key=self.seq_usage_key, display_name='vertical1', category='vertical')
+        self.vert_usage_key = self.response_usage_key(vert1)
 
-        resp = self.create_xblock(parent_usage_key=self.seq_usage_key, display_name='vertical2', category='vertical')
-        self.vert2_usage_key = self.response_usage_key(resp)
+        vert2 = self.create_xblock(parent_usage_key=self.seq_usage_key, display_name='vertical2', category='vertical')
+        self.vert2_usage_key = self.response_usage_key(vert2)
 
         # create problem and an html component
-        resp = self.create_xblock(parent_usage_key=self.vert_usage_key, display_name='problem1', category='problem',
-                                  boilerplate='multiplechoice.yaml')
-        self.problem_usage_key = self.response_usage_key(resp)
+        problem1 = self.create_xblock(parent_usage_key=self.vert_usage_key, display_name='problem1', category='problem')
+        self.problem_usage_key = self.response_usage_key(problem1)
 
-        resp = self.create_xblock(parent_usage_key=self.vert_usage_key, display_name='html1', category='html')
-        self.html_usage_key = self.response_usage_key(resp)
+        html1 = self.create_xblock(parent_usage_key=self.vert_usage_key, display_name='html1', category='html')
+        self.html_usage_key = self.response_usage_key(html1)
 
     def _move_component(self, source_usage_key, dest_usage_key, source_index=None):
         """
-        Helper method to send move request and returns the response
+        Helper method to send move request and returns the response.
+
+        Arguments:
+            source_usage_key (BlockUsageLocator): Locator of source item.
+            dest_usage_key (BlockUsageLocator): Locator of destination item.
+            source_index (int): If provided, insert source item at the provided index location in dest_usage_key item.
+
+        Returns:
+            resp (JsonResponse): Response after the move operation is complete.
         """
         data = {
             'move_source_locator': unicode(source_usage_key),
@@ -735,6 +743,11 @@ class TestMoveItem(ItemTest):
     def assert_move_item(self, source_usage_key, dest_usage_key, source_index=None):
         """
         Assert move component.
+
+        Arguments:
+            source_usage_key (BlockUsageLocator): Locator of source item.
+            dest_usage_key (BlockUsageLocator): Locator of destination item.
+            source_index (int): If provided, insert source item at the provided index location in dest_usage_key item.
         """
         parent_loc = self.store.get_parent_location(source_usage_key)
         actual_souce_index = _get_source_index(source_usage_key)
