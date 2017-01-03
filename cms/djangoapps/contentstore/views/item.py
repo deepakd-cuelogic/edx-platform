@@ -1267,8 +1267,6 @@ def xblock_summary(xblock, include_children=False):
     Arguments:
         xblock (Xblock): An XBlock whose summary is to be made.
         include_children (bool): If True, includes child XBlocks information.
-        child_info (List): A list of info of children of the XBlock
-                          If None, child_info is not attached to summary.
 
     Returns:
         xblock_info(dict): A dict containing basic information about the XBlock.

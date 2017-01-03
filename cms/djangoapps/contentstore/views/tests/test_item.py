@@ -693,11 +693,11 @@ class TestMoveItem(ItemTest):
         super(TestMoveItem, self).setUp()
 
         # Create a parent chapter
-        chapter1 = self.create_xblock(parent_usage_key=self.course.location, display_name='chapter1', category='chapter')
-        self.chapter_usage_key = self.response_usage_key(chapter1)
+        chap1 = self.create_xblock(parent_usage_key=self.course.location, display_name='chapter1', category='chapter')
+        self.chapter_usage_key = self.response_usage_key(chap1)
 
-        chapter2 = self.create_xblock(parent_usage_key=self.course.location, display_name='chapter2', category='chapter')
-        self.chapter2_usage_key = self.response_usage_key(chapter2)
+        chap2 = self.create_xblock(parent_usage_key=self.course.location, display_name='chapter2', category='chapter')
+        self.chapter2_usage_key = self.response_usage_key(chap2)
 
         # create a sequential
         seq1 = self.create_xblock(parent_usage_key=self.chapter_usage_key, display_name='seq1', category='sequential')
