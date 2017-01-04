@@ -193,7 +193,7 @@ def _update_subsection_grades(
                     )
 
         except Exception as exc:   # pylint: disable=broad-except
-            if isinstance(exc, KNOWN_RETRY_ERRORS):
+            if not isinstance(exc, KNOWN_RETRY_ERRORS):
                 log.info("tnl-6244 grades unexpected failure: {}. user_id, usage_id, course_id: {}, {}, {}".format(
                     repr(exc),
                     user_id,
