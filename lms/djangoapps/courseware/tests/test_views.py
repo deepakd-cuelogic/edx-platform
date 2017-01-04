@@ -1782,6 +1782,7 @@ class ViewCheckerBlock(XBlock):
     """
     has_children = True
     state = String(scope=Scope.user_state)
+    position = 0
 
     def student_view(self, context):  # pylint: disable=unused-argument
         """
