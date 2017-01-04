@@ -188,8 +188,23 @@ def _update_subsection_grades(
                         subsection_grade=subsection_grade,
                     )
 
+        except (DatabaseError, ValidationError) as exc:
+            raise _retry_recalculate_subsection_grade(
+                user_id,
+                course_id,
+                usage_id,
+                only_if_higher,
+                expected_modified_time,
+                score_deleted,
+                exc,
+            )
         except Exception as exc:   # pylint: disable=broad-except
-            log.info("_update_subsection_grades unexpected failure, retrying. Error: {}".format(repr(exc)))
+            log.info("tnl-6244 grades update failure: {}. user_id, usage_id, course_id: {}, {}, {}".format(
+                repr(exc),
+                user_id,
+                usage_id,
+                course_id
+            ))
             raise _retry_recalculate_subsection_grade(
                 user_id,
                 course_id,
