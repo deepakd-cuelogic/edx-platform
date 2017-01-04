@@ -252,7 +252,7 @@ define(['jquery', 'underscore', 'gettext', 'common/js/components/utils/view_util
                 // If not found, try looking for the old unit page style rendering.
                 // Only used now by static pages.
                 if (!displayName) {
-                    displayName = this.xblockElement.find('.component-header').text().trim();
+                    displayName = xblockElement.find('.component-header').text().trim();
                 }
                 xblockInfo = new XBlockInfo({
                     id: xblockWrapperElement.data('locator'),
