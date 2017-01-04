@@ -55,7 +55,7 @@ def get_user_program_credentials(user):
     programs_credentials = []
     for credential in credentials:
         try:
-            if 'program_id' in credential['credential'] and credential['status'] == 'awarded':
+            if 'program_uuid' in credential['credential'] and credential['status'] == 'awarded':
                 programs_credentials.append(credential)
         except KeyError:
             log.exception('Invalid credential structure: %r', credential)

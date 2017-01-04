@@ -154,7 +154,7 @@ class TestCredentialsRetrieval(ProgramsApiConfigMixin, CredentialsApiConfigMixin
                 "username": "test",
                 "credential": {
                     "credential_id": 1,
-                    "program_id": 1
+                    "program_uuid": 'c9f2568b-6459-4fc2-badd-a14571a3de66'
                 },
                 "status": "revoked",
                 "uuid": "dummy-uuid-1"

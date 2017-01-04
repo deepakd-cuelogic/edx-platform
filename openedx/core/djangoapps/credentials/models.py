@@ -55,14 +55,14 @@ class CredentialsApiConfig(ConfigurationModel):
         """
         Generate a URL based on internal service URL and API version number.
         """
-        return urljoin(self.internal_service_url, '/api/v1/')
+        return urljoin(self.internal_service_url, '/api/v2/')
 
     @property
     def public_api_url(self):
         """
         Generate a URL based on public service URL and API version number.
         """
-        return urljoin(self.public_service_url, '/api/v1/')
+        return urljoin(self.public_service_url, '/api/v2/')
 
     @property
     def is_learner_issuance_enabled(self):
