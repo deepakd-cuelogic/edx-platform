@@ -5,6 +5,8 @@ This module contains tasks for asynchronous execution of grade updates.
 from celery import task
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.db.utils import DatabaseError
 from logging import getLogger
 
 from courseware.model_data import get_score
