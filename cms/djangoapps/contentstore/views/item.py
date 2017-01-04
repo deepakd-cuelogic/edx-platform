@@ -98,7 +98,7 @@ def xblock_handler(request, usage_key_string):
     GET
         json: returns representation of the xblock (locator id, data, and metadata).
               if ?fields=graderType, it returns the graderType for the unit instead of the above.
-              if ?course_tree=1, it returns the a course_outline summary and XBlock summary.
+              if ?format=course_tree, it returns a course_outline summary.
         html: returns HTML for rendering the xblock (which includes both the "preview" view and the "editor" view)
     PUT or POST or PATCH
         json: if xblock locator is specified, update the xblock instance. The json payload can contain
@@ -148,15 +148,21 @@ def xblock_handler(request, usage_key_string):
             if 'application/json' in accept_header:
                 store = modulestore()
                 fields = request.GET.get('fields', '').split(',')
+                format = request.GET.get('format', None)
                 if 'graderType' in fields:
                     # right now can't combine output of this w/ output of _get_module_info, but worthy goal
                     return JsonResponse(CourseGradingModel.get_section_grader_type(usage_key))
-                if int(request.GET.get('course_tree', 0)):
+                elif format:
                     xblock = _get_xblock(usage_key, request.user)
                     course = store.get_course(xblock.location.course_key)   # pylint: disable=no-member
-                    xblock_info = xblock_summary(xblock)
-                    course_outline = xblock_summary(course, include_children=True)
-                    return JsonResponse({'course_outline': course_outline, 'xblock_info': xblock_info})
+                    course_outline = create_xblock_info(
+                        course,
+                        include_child_info=True,
+                        include_children_predicate=lambda xblock: xblock.has_children,
+                        format=format
+                    )
+                    ancestor_info = _create_xblock_ancestor_info(xblock, course_outline, format=format)
+                    return JsonResponse({'course_outline': course_outline, 'ancestor_info': ancestor_info})
                 # TODO: pass fields to _get_module_info and only return those
                 with store.bulk_operations(usage_key.course_key):
                     response = _get_module_info(_get_xblock(usage_key, request.user))
@@ -895,7 +901,7 @@ def _get_gating_info(course, xblock):
 
 def create_xblock_info(xblock, data=None, metadata=None, include_ancestor_info=False, include_child_info=False,
                        course_outline=False, include_children_predicate=NEVER, parent_xblock=None, graders=None,
-                       user=None, course=None):
+                       user=None, course=None, format=None):
     """
     Creates the information needed for client-side XBlockInfo.
 
@@ -941,7 +947,8 @@ def create_xblock_info(xblock, data=None, metadata=None, include_ancestor_info=F
             graders,
             include_children_predicate=include_children_predicate,
             user=user,
-            course=course
+            course=course,
+            format=format
         )
     else:
         child_info = None
@@ -1054,6 +1061,15 @@ def create_xblock_info(xblock, data=None, metadata=None, include_ancestor_info=F
         else:
             xblock_info["staff_only_message"] = False
 
+    if format == 'course_tree':
+        xblock_info = {
+            "id": unicode(xblock.location),
+            "display_name": xblock.display_name_with_default,
+            "category": xblock.category
+        }
+        if child_info and len(child_info.get('children', [])) > 0:
+            xblock_info['child_info'] = child_info
+
     return xblock_info
 
 
@@ -1124,6 +1140,7 @@ def _compute_visibility_state(xblock, child_info, is_unit_with_changes, is_cours
     """
     Returns the current publish state for the specified xblock and its children
     """
+    child_info = None   # TODO remove when resolved
     if xblock.visible_to_staff_only:
         return VisibilityState.staff_only
     elif is_unit_with_changes:
@@ -1163,14 +1180,14 @@ def _compute_visibility_state(xblock, child_info, is_unit_with_changes, is_cours
         return VisibilityState.ready
 
 
-def _create_xblock_ancestor_info(xblock, course_outline):
+def _create_xblock_ancestor_info(xblock, course_outline, format=None):
     """
     Returns information about the ancestors of an xblock. Note that the direct parent will also return
     information about all of its children.
     """
     ancestors = []
 
-    def collect_ancestor_info(ancestor, include_child_info=False):
+    def collect_ancestor_info(ancestor, include_child_info=False, format=None):
         """
         Collect xblock info regarding the specified xblock and its ancestors.
         """
@@ -1180,16 +1197,18 @@ def _create_xblock_ancestor_info(xblock, course_outline):
                 ancestor,
                 include_child_info=include_child_info,
                 course_outline=course_outline,
-                include_children_predicate=direct_children_only
+                include_children_predicate=direct_children_only,
+                format=format
             ))
-            collect_ancestor_info(get_parent_xblock(ancestor))
-    collect_ancestor_info(get_parent_xblock(xblock), include_child_info=True)
+            collect_ancestor_info(get_parent_xblock(ancestor), format=format)
+    collect_ancestor_info(get_parent_xblock(xblock), include_child_info=True, format=format)
     return {
         'ancestors': ancestors
     }
 
 
-def _create_xblock_child_info(xblock, course_outline, graders, include_children_predicate=NEVER, user=None, course=None):  # pylint: disable=line-too-long
+def _create_xblock_child_info(xblock, course_outline, graders, include_children_predicate=NEVER, user=None,
+                              course=None, format=None):  # pylint: disable=line-too-long
     """
     Returns information about the children of an xblock, as well as about the primary category
     of xblock expected as children.
@@ -1210,6 +1229,7 @@ def _create_xblock_child_info(xblock, course_outline, graders, include_children_
                 graders=graders,
                 user=user,
                 course=course,
+                format=format
             ) for child in xblock.get_children()
         ]
     return child_info
