@@ -31,6 +31,8 @@ from .transformer import GradesTransformer
 
 log = getLogger(__name__)
 
+KNOWN_RETRY_ERRORS = (DatabaseError, ValidationError)  # Errors we expect occasionally, should be resolved on retry
+
 
 @task(default_retry_delay=30, routing_key=settings.RECALCULATE_GRADES_ROUTING_KEY)
 def recalculate_subsection_grade(
@@ -191,7 +193,7 @@ def _update_subsection_grades(
                     )
 
         except Exception as exc:   # pylint: disable=broad-except
-            if type(exc) not in (DatabaseError, ValidationError):
+            if isinstance(exc, KNOWN_RETRY_ERRORS):
                 log.info("tnl-6244 grades unexpected failure: {}. user_id, usage_id, course_id: {}, {}, {}".format(
                     repr(exc),
                     user_id,
