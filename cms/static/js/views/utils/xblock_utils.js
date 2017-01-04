@@ -2,11 +2,11 @@
  * Provides utilities for views to work with xblocks.
  */
 define(['jquery', 'underscore', 'gettext', 'common/js/components/utils/view_utils', 'js/utils/module',
-        'edx-ui-toolkit/js/utils/string-utils'],
-    function($, _, gettext, ViewUtils, ModuleUtils, StringUtils) {
+        'js/models/xblock_info', 'edx-ui-toolkit/js/utils/string-utils'],
+    function($, _, gettext, ViewUtils, ModuleUtils, XBlockInfo, StringUtils) {
         'use strict';
         var addXBlock, duplicateXBlock, deleteXBlock, createUpdateRequestData, updateXBlockField, VisibilityState,
-            getXBlockVisibilityClass, getXBlockListTypeClass, updateXBlockFields, getXBlockType;
+            getXBlockVisibilityClass, getXBlockListTypeClass, updateXBlockFields, getXBlockType, findXBlockInfo;
 
         /**
          * Represents the possible visibility states for an xblock:
@@ -240,6 +240,30 @@ define(['jquery', 'underscore', 'gettext', 'common/js/components/utils/view_util
             return xblockType;
         };
 
+        findXBlockInfo = function(xblockWrapperElement, defaultXBlockInfo) {
+            var xblockInfo = defaultXBlockInfo,
+                xblockElement,
+                displayName;
+            if (xblockWrapperElement.length > 0) {
+                xblockElement = xblockWrapperElement.find('.xblock');
+                displayName = xblockWrapperElement.find(
+                    '.xblock-header .header-details .xblock-display-name'
+                ).text().trim();
+                // If not found, try looking for the old unit page style rendering.
+                // Only used now by static pages.
+                if (!displayName) {
+                    displayName = this.xblockElement.find('.component-header').text().trim();
+                }
+                xblockInfo = new XBlockInfo({
+                    id: xblockWrapperElement.data('locator'),
+                    courseKey: xblockWrapperElement.data('course-key'),
+                    category: xblockElement.data('block-type'),
+                    display_name: displayName
+                });
+            }
+            return xblockInfo;
+        };
+
         return {
             'VisibilityState': VisibilityState,
             'addXBlock': addXBlock,
@@ -249,6 +273,7 @@ define(['jquery', 'underscore', 'gettext', 'common/js/components/utils/view_util
             'getXBlockVisibilityClass': getXBlockVisibilityClass,
             'getXBlockListTypeClass': getXBlockListTypeClass,
             'updateXBlockFields': updateXBlockFields,
-            'getXBlockType': getXBlockType
+            'getXBlockType': getXBlockType,
+            findXBlockInfo: findXBlockInfo
         };
     });

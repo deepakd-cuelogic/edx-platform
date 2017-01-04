@@ -16,8 +16,10 @@
  *     size of the modal.
  *   viewSpecificClasses: A string of CSS classes to be attached to
  *     the modal window.
- *   addSaveButton: A boolean indicating whether to include a save
+ *   addPrimaryActionButton: A boolean indicating whether to include a primary action
  *     button on the modal.
+ *   primaryActionButtonType: A string to be used as type for primary action button.
+ *   primaryActionButtonTitle: A string to be used as title for primary action button.
  */
 define(['jquery', 'underscore', 'gettext', 'js/views/baseview'],
     function($, _, gettext, BaseView) {
@@ -36,7 +38,10 @@ define(['jquery', 'underscore', 'gettext', 'js/views/baseview'],
                 title: '',
                 modalWindowClass: '.modal-window',
                 // A list of class names, separated by space.
-                viewSpecificClasses: ''
+                viewSpecificClasses: '',
+                addPrimaryActionButton: true,
+                primaryActionButtonType: 'save',
+                primaryActionButtonTitle: gettext('Save')
             }),
 
             initialize: function() {
@@ -112,8 +117,12 @@ define(['jquery', 'underscore', 'gettext', 'js/views/baseview'],
              * Adds the action buttons to the modal.
              */
             addActionButtons: function() {
-                if (this.options.addSaveButton) {
-                    this.addActionButton('save', gettext('Save'), true);
+                if (this.options.addPrimaryActionButton) {
+                    this.addActionButton(
+                        this.options.primaryActionButtonType,
+                        this.options.primaryActionButtonTitle,
+                        true
+                    );
                 }
                 this.addActionButton('cancel', gettext('Cancel'));
             },
