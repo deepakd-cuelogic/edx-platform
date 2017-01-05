@@ -1,9 +1,10 @@
 /**
  * The MoveXblockModal to move XBlocks in course.
  */
-define(['jquery', 'backbone', 'underscore', 'gettext', 'js/views/baseview', 'js/views/modals/base_modal'
+define(['jquery', 'backbone', 'underscore', 'gettext', 'js/views/baseview', 'js/views/modals/base_modal',
+        'text!templates/move-xblock-modal.underscore'
 ], function(
-    $, Backbone, _, gettext, BaseView, BaseModal
+    $, Backbone, _, gettext, BaseView, BaseModal, MoveXblockModalTemplate
 ) {
     'use strict';
 
@@ -18,19 +19,19 @@ define(['jquery', 'backbone', 'underscore', 'gettext', 'js/views/baseview', 'js/
             viewSpecificClasses: 'confirm',
             title: gettext('Move'),
             primaryActionButtonType: 'move',
-            primaryActionButtonTitle: gettext('Move')
+            primaryActionButtonTitle: gettext('Move'),
+            firstFocusableElement: '.treeview-container'
         }),
 
         initialize: function() {
             BaseModal.prototype.initialize.call(this);
-            this.template = this.loadTemplate('move-xblock-modal');
             this.sourceXBlockInfo = this.options.sourceXBlockInfo;
             this.XBlockUrlRoot = this.options.sourceXBlockInfo;
             this.options.title = this.getTitle();
         },
 
         getContentHtml: function() {
-            return this.template(this.getContext());
+            return _.template(MoveXblockModalTemplate)(this.getContext());
         },
 
         moveXBlock: function(event) {

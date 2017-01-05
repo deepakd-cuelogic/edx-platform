@@ -41,7 +41,9 @@ define(['jquery', 'underscore', 'gettext', 'js/views/baseview'],
                 viewSpecificClasses: '',
                 addPrimaryActionButton: true,
                 primaryActionButtonType: 'save',
-                primaryActionButtonTitle: gettext('Save')
+                primaryActionButtonTitle: gettext('Save'),
+                firstFocusableElement: '.modal-window',
+                lastFocusableElement: '.action-cancel'
             }),
 
             initialize: function() {
@@ -58,6 +60,38 @@ define(['jquery', 'underscore', 'gettext', 'js/views/baseview'],
                     }
                 }
                 this.parentElement = parentElement;
+            },
+
+            bindTabHandlers: function() {
+                var firstFocusableElement,
+                    lastFocusableElement,
+                    self = this;
+
+                // trap the Tab keypress on last element and redirect to first focusable element
+                if (this.options.lastFocusableElement) {
+                    lastFocusableElement = this.$el.find(this.options.lastFocusableElement);
+                    lastFocusableElement.on('keydown', function(e) {
+                        var keyCode = e.keyCode || e.which;
+                        // 9 is the js keycode for tab
+                        if (!e.shiftKey && keyCode === 9) {
+                            e.preventDefault();
+                            self.focusFirstElement();
+                        }
+                    });
+                }
+
+                // trap shift+tab keypress on first element and redirect to last focusable element
+                if (this.options.firstFocusableElement) {
+                    firstFocusableElement = this.$el.find(this.options.firstFocusableElement);
+                    firstFocusableElement.on('keydown', function(e) {
+                        var keyCode = e.keyCode || e.which;
+                        // 9 is the js keycode for tab
+                        if (e.shiftKey && keyCode === 9) {
+                            e.preventDefault();
+                            self.focusLastElement();
+                        }
+                    });
+                }
             },
 
             render: function() {
@@ -91,12 +125,22 @@ define(['jquery', 'underscore', 'gettext', 'js/views/baseview'],
 
             show: function() {
                 this.render();
+                this.bindTabHandlers();
                 this.resize();
                 $(window).resize(_.bind(this.resize, this));
 
-                // after showing and resizing, send focus
-                var modal = this.$el.find(this.options.modalWindowClass);
-                modal.focus();
+                // after showing and resizing, send focus to firs focusable element
+                this.focusFirstElement();
+            },
+
+            focusFirstElement: function() {
+                var firstElement = this.$el.find(this.options.firstFocusableElement);
+                firstElement.focus();
+            },
+
+            focusLastElement: function() {
+                var lastElement = this.$el.find(this.options.lastFocusableElement);
+                lastElement.focus();
             },
 
             hide: function() {

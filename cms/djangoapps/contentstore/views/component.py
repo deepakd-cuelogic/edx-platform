@@ -47,7 +47,7 @@ ADVANCED_COMPONENT_TYPES = sorted(set(name for name, class_ in XBlock.load_class
 ADVANCED_PROBLEM_TYPES = settings.ADVANCED_PROBLEM_TYPES
 
 CONTAINER_TEMPLATES = [
-    "basic-modal", "modal-button", "edit-xblock-modal", "move-xblock-modal",
+    "basic-modal", "modal-button", "edit-xblock-modal",
     "editor-mode-button", "upload-dialog",
     "add-xblock-component", "add-xblock-component-button", "add-xblock-component-menu",
     "add-xblock-component-support-legend", "add-xblock-component-support-level", "add-xblock-component-menu-problem",
