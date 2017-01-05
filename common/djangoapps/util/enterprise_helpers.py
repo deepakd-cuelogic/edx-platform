@@ -130,7 +130,6 @@ def get_enterprise_customer_logo_url(request):
     """
     Client API operation adapter/wrapper.
     """
-
     if not enterprise_enabled():
         return None
 

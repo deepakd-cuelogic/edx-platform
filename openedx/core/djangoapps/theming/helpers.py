@@ -24,6 +24,7 @@ def get_template_path(relative_path, **kwargs):
     # We need to give priority to theming over microsites
     # So, we apply microsite override only if there is no associated site theme
     # and associated microsite is present.
+
     if not current_request_has_associated_site_theme() and microsite.is_request_in_microsite():
         relative_path = microsite.get_template_path(relative_path, **kwargs)
     return relative_path

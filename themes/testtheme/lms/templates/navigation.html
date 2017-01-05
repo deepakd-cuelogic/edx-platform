@@ -66,12 +66,11 @@ site_status_msg = get_site_status_msg(course_id)
 	logo_url = get_enterprise_customer_logo_url(request)
 	logo_size = 'ec-logo-size'
 	if logo_url is None:
-	    logo_url = branding_api.get_logo_url(is_secure)
-	    logo_size = ''
+	   logo_url = branding_api.get_logo_url(is_secure)
+	   logo_size = ''
 	   %>
-	<img class="${logo_size}" src="/static/images/logo-d.png" alt="${_("{platform_name} Home Page").format(platform_name=static.get_platform_name())}"/>
-	<!--img class="${logo_size}" src="${logo_url}" alt="${_("{platform_name} Home Page").format(platform_name=static.get_platform_name())}"/-->
-	</%block>
+	<img class="${logo_size}" src="${logo_url}" alt="${_("{platform_name} Home Page").format(platform_name=static.get_platform_name())}"/>
+</%block>
       </a>
     </h1>
 
@@ -97,8 +96,18 @@ site_status_msg = get_site_status_msg(course_id)
 	</li>
 
 	<li class="item nav-global-01">
-	  <button id="btn-2" type="button"><strong>Press</strong></button>
+	  <button id="btn-2" type="button"><strong>Press 2</strong></button>
 	</li>
+	<li class="item nav-global-01">
+	  <button id="btn-3" type="button"><strong>Press 3</strong></button>
+	</li>
+	  <li class="item nav-global-01">
+	  <button id="btn-4" type="button"><strong>Press 4</strong></button>
+	</li>
+	  <li class="item nav-global-01">
+	  <button id="btn-5" type="button"><strong>Press 5</strong></button>
+	</li>
+
 	% endif
 	  % if show_program_listing:
 	    <li class="tab-nav-item">

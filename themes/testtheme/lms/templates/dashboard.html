@@ -36,7 +36,8 @@ from openedx.core.djangolib.markup import HTML, Text
 </%block>
 
 <%block name="js_extra">
-  <script src="${static.url('js/commerce/credit.js')}"></script>
+<script src="${static.url('js/commerce/credit.js')}"></script>
+<script src="${static.url('js/test.js')}"></script>
   <%static:js group='dashboard'/>
   <script type="text/javascript">
     $(document).ready(function() {
@@ -86,7 +87,7 @@ from openedx.core.djangolib.markup import HTML, Text
 	% if len(course_enrollments) > 0:
 	  <ul class="listing-courses">
 	  <% share_settings = getattr(settings, 'SOCIAL_SHARING_SETTINGS', {}) %>
-	  % for dashboard_index, enrollment in enumerate(curse_enrollments):
+	  % for dashboard_index, enrollment in enumerate(course_enrollments):
 	    <% show_courseware_link = (enrollment.course_id in show_courseware_links_for) %>
 	    <% cert_status = cert_statuses.get(enrollment.course_id) %>
 	    <% can_unenroll = (not cert_status) or cert_status.get('can_unenroll') %>

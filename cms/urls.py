@@ -19,6 +19,7 @@ urlpatterns = patterns(
     '',
 
     url(r'', include('student.urls')),
+    url(r'^reference/', include('reference.urls')),
 
     url(r'^transcripts/upload$', 'contentstore.views.upload_transcripts', name='upload_transcripts'),
     url(r'^transcripts/download$', 'contentstore.views.download_transcripts', name='download_transcripts'),

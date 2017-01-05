@@ -1,0 +1,72 @@
+<%inherit file="../main.html" />
+<%!
+   from django.utils.translation import ugettext as _
+   from django.core.urlresolvers import reverse
+   %>
+
+<%namespace name='static' file='../static_content.html'/>
+
+
+<%block name="pagetitle">
+${_("Reference")}
+</%block>
+
+<style>
+
+  tr:hover {background-color: #f5f5f5}
+  table, th, td {
+  border-collapse: collapse;
+  height: 25px;
+  }
+
+  table {
+  border-collapse: collapse;
+  width: 100%;
+  }
+
+  th, td {
+  padding: 8px;
+  text-align: center;
+  border-bottom: 1px solid #ddd;
+  }
+
+</style>
+<%block name="content">
+<section class="content">
+  <header>
+    <h1 class="title title-1">CRUD Operation with References</h1>
+  </header>
+  <form class="ssform-horizontal" enctype="multipart/form-data" class="register-form">
+    <fieldset>
+      <input type="hidden" name="csrfmiddlewaretoken" value="${ csrf_token }" />
+      <table>
+	<th>
+	  <h2><p> Click on <strong><a href="/reference/create">Add</a></strong></p> to create new Reference.<h2>
+	</th>
+	<tr>
+	  <h2>
+	    <th>Reference Name</th>
+	    <th>Reference Type</th>
+	    <th>Reference Link</th>
+	    <th>Reference Status</th>
+	    <th>Reference Desc</th>
+	    <th>Options</th>
+	  </h2>
+	</tr>
+	% for field in data:
+	<tr>
+	  <td>${field["ref_name"]}</td>
+	  <td>${field["ref_type"]}</td>
+	  <td><a href="${field['ref_link']}">${field["ref_link"]}</a></td>
+	  <td>${field["ref_status"]}</td>
+	  <td>${field["ref_desc"]}</td>
+	  <td>
+	    <a href="/reference/edit/${field['id']}"><strong>Modify</strong></a> &nbsp;&nbsp; <a href="/reference/delete/${field['id']}"><strong>Delete</strong></a></td>
+	</tr>
+	<br>
+	% endfor
+      </table>
+    </fieldset>
+  </form>
+</section>
+</%block>

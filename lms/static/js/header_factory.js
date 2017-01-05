@@ -2,15 +2,15 @@
     'use strict';
 
     define([
-        'edx-ui-toolkit/js/dropdown-menu/dropdown-menu-view'
+	'edx-ui-toolkit/js/dropdown-menu/dropdown-menu-view'
     ],
     function(DropdownMenuView) {
-        return function() {
-            var dropdownMenuView = new DropdownMenuView({
-                el: '.js-header-user-menu'
-            }).postRender();
+	return function() {
+	    var dropdownMenuView = new DropdownMenuView({
+		el: '.js-header-user-menu'
+	    }).postRender();
 
-            return dropdownMenuView;
-        };
+	    return dropdownMenuView;
+	};
     });
 }).call(this, define || RequireJS.define);

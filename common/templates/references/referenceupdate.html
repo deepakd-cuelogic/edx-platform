@@ -1,0 +1,50 @@
+<%inherit file="../main.html" />
+<%!
+   from django.utils.translation import ugettext as _
+   from django.core.urlresolvers import reverse
+   %>
+
+<%namespace name='static' file='../static_content.html'/>
+
+
+<%block name="pagetitle">
+${_("Reference")}
+</%block>
+
+
+<%block name="content">
+<section class="content">
+  <header>
+    <h1 class="title title-1">CRUD Operation with References</h1>
+  </header>
+  <p style='padding-top:100px; text-align:center;'>
+    <form class="form-horizontal" method="post" action="/reference/" enctype="multipart/form-data">
+      <div class="col-md-12">
+	<fieldset>
+	  <input type="hidden" name="csrfmiddlewaretoken" value="${ csrf_token }" />
+	  % for field in form:
+	  <div class="field">
+	    <span class="text-danger">${field.errors} </span>
+	    <small class="">${field.help_text}</small>
+	    ${field.label}
+	    <div class="col-sm-10">
+	      ${ field }
+	    </div>
+	  </div>
+	  <br>
+	  % endfor
+	  <input type="hidden" value="${pk}" id="hf" >
+	</fieldset>
+	<div class="btn-set">
+	  <div class="text-right save-btn">
+	    <input class="custom-btn" type="button" name='save' id="btnupdate"
+		   value="Update"/>
+	  </div>
+	</div>
+    </form>
+  </p>
+</section>
+
+</%block>
+<script type="text/javascript" src="${static.url('js/refrenceapp/reference.js')}">
+</script>

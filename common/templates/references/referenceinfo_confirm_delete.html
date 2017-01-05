@@ -1,0 +1,30 @@
+<%inherit file="../main.html" />
+<%!
+   from django.utils.translation import ugettext as _
+   from django.core.urlresolvers import reverse
+   %>
+
+<%namespace name='static' file='../static_content.html'/>
+
+
+<%block name="pagetitle">
+${_("Reference")}
+</%block>
+
+
+<%block name="content">
+<section class="content">
+  <header>
+    <h1 class="title title-1">CRUD Operation with References</h1>
+  </header>
+  <p style='padding-top:100px; text-align:center;'>
+    <form method="post">
+      <input type="hidden" name="csrfmiddlewaretoken" value="${ csrf_token }" />
+      <input type="hidden" value="${pk}" id="hf" >
+      Are you sure you want to delete "${ object }" ?
+      <input type="submit" value="Submit" />
+      <a href="/reference/"><input type="button" value="Cancel"></a>
+    </form>
+  </p>
+</section>
+</%block>
