@@ -47,6 +47,7 @@ urlpatterns = (
 
     # Note: these are older versions of the User API that will eventually be
     # subsumed by api/user listed below.
+
     url(r'^user_api/', include('openedx.core.djangoapps.user_api.legacy_urls')),
 
     url(r'^notifier_api/', include('notifier_api.urls')),
@@ -55,6 +56,10 @@ urlpatterns = (
 
     # Feedback Form endpoint
     url(r'^submit_feedback$', 'util.views.submit_feedback'),
+
+    # discourse Form endpoints 
+    #url(r'^discourse$', 'util.views.discourse'),
+    url(r'^discussion', 'student.views.discussion', name="discussion"),
 
     # Enrollment API RESTful endpoints
     url(r'^api/enrollment/v1/', include('enrollment.urls')),

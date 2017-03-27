@@ -432,7 +432,6 @@ def info(request):
     # pylint: disable=unused-argument
     return render_to_response("info.html", {})
 
-
 # From http://djangosnippets.org/snippets/1042/
 def parse_accept_header(accept):
     """Parse the Accept header *accept*, returning a list with pairs of

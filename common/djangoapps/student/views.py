@@ -99,6 +99,8 @@ from util.milestones_helpers import (
     get_pre_requisite_courses_not_completed,
 )
 
+from microsite_configuration import microsite
+
 from util.password_policy_validators import validate_password_strength
 import third_party_auth
 from third_party_auth import pipeline, provider
@@ -802,6 +804,193 @@ def dashboard(request):
     set_user_info_cookie(response, request)
     return response
 
+#discourse integration............
+@login_required
+@ensure_csrf_cookie
+def discussion(request):
+    discourse_url = 'http://192.168.33.10/'
+    if request.GET.get('topic'):
+        discourse_url += 't/'+ request.GET.get('topic') +'/'
+    user = request.user
+
+    platform_name = microsite.get_value("platform_name", settings.PLATFORM_NAME)
+
+    # for microsites, we want to filter and only show enrollments for courses within
+    # the microsites 'ORG'
+    course_org_filter = microsite.get_value('course_org_filter')
+
+    # Let's filter out any courses in an "org" that has been declared to be
+    # in a Microsite
+    org_filter_out_set = microsite.get_all_orgs()
+
+    # remove our current Microsite from the "filter out" list, if applicable
+    if course_org_filter:
+        org_filter_out_set.remove(course_org_filter)
+
+    # Build our (course, enrollment) list for the user, but ignore any courses that no
+    # longer exist (because the course IDs have changed). Still, we don't delete those
+    # enrollments, because it could have been a data push snafu.
+    course_enrollments = list(get_course_enrollments(user, course_org_filter, org_filter_out_set))
+
+    # sort the enrollment pairs by the enrollment date
+    course_enrollments.sort(key=lambda x: x.created, reverse=True)
+
+    # Retrieve the course modes for each course
+    enrolled_course_ids = [enrollment.course_id for enrollment in course_enrollments]
+    __, unexpired_course_modes = CourseMode.all_and_unexpired_modes_for_courses(enrolled_course_ids)
+    course_modes_by_course = {
+        course_id: {
+            mode.slug: mode
+            for mode in modes
+            }
+        for course_id, modes in unexpired_course_modes.iteritems()
+        }
+
+    # Check to see if the student has recently enrolled in a course.
+    # If so, display a notification message confirming the enrollment.
+    enrollment_message = _create_recent_enrollment_message(
+        course_enrollments, course_modes_by_course
+    )
+
+    course_optouts = Optout.objects.filter(user=user).values_list('course_id', flat=True)
+
+    message = ""
+    if not user.is_active:
+        message = render_to_string(
+            'registration/activate_account_notice.html',
+            {'email': user.email, 'platform_name': platform_name}
+        )
+
+    # Global staff can see what courses errored on their dashboard
+    staff_access = False
+    errored_courses = {}
+    if has_access(user, 'staff', 'global'):
+        # Show any courses that errored on load
+        staff_access = True
+        errored_courses = modulestore().get_errored_courses()
+
+    show_courseware_links_for = frozenset(
+        enrollment.course_id for enrollment in course_enrollments
+        if has_access(request.user, 'load', enrollment.course_overview)
+        and has_access(request.user, 'view_courseware_with_prerequisites', enrollment.course_overview)
+    )
+
+    # Get any programs associated with courses being displayed.
+    # This is passed along in the template context to allow rendering of
+    # program-related information on the dashboard.
+    # course_programs = _get_course_programs(user, [enrollment.course_id for enrollment in course_enrollments])
+    # xseries_credentials = _get_xseries_credentials(user)
+
+    # Construct a dictionary of course mode information
+    # used to render the course list.  We re-use the course modes dict
+    # we loaded earlier to avoid hitting the database.
+    course_mode_info = {
+        enrollment.course_id: complete_course_mode_info(
+            enrollment.course_id, enrollment,
+            modes=course_modes_by_course[enrollment.course_id]
+        )
+        for enrollment in course_enrollments
+        }
+
+    # Determine the per-course verification status
+    # This is a dictionary in which the keys are course locators
+    # and the values are one of:
+    #
+    # VERIFY_STATUS_NEED_TO_VERIFY
+    # VERIFY_STATUS_SUBMITTED
+    # VERIFY_STATUS_APPROVED
+    # VERIFY_STATUS_MISSED_DEADLINE
+    #
+    # Each of which correspond to a particular message to display
+    # next to the course on the dashboard.
+    #
+    # If a course is not included in this dictionary,
+    # there is no verification messaging to display.
+    verify_status_by_course = check_verify_status_by_course(user, course_enrollments)
+    cert_statuses = {
+        enrollment.course_id: cert_info(request.user, enrollment.course_overview, enrollment.mode)
+        for enrollment in course_enrollments
+        }
+
+    # only show email settings for Mongo course and when bulk email is turned on
+    # show_email_settings_for = frozenset(
+    #     enrollment.course_id for enrollment in course_enrollments if (
+    #         settings.FEATURES['ENABLE_INSTRUCTOR_EMAIL'] and
+    #         modulestore().get_modulestore_type(enrollment.course_id) != ModuleStoreEnum.Type.xml and
+    #         CourseAuthorization.instructor_email_enabled(enrollment.course_id)
+    #     )
+    # )
+
+    # Verification Attempts
+    # Used to generate the "you must reverify for course x" banner
+    verification_status, verification_msg = SoftwareSecurePhotoVerification.user_status(user)
+
+    # Gets data for midcourse reverifications, if any are necessary or have failed
+    statuses = ["approved", "denied", "pending", "must_reverify"]
+    reverifications = reverification_info(statuses)
+
+    show_refund_option_for = frozenset(
+        enrollment.course_id for enrollment in course_enrollments
+        if enrollment.refundable()
+    )
+
+    block_courses = frozenset(
+        enrollment.course_id for enrollment in course_enrollments
+        if is_course_blocked(
+            request,
+            CourseRegistrationCode.objects.filter(
+                course_id=enrollment.course_id,
+                registrationcoderedemption__redeemed_by=request.user
+            ),
+            enrollment.course_id
+        )
+    )
+
+    enrolled_courses_either_paid = frozenset(
+        enrollment.course_id for enrollment in course_enrollments
+        if enrollment.is_paid_course()
+    )
+
+    context = {
+        'course_enrollments': course_enrollments,
+        'course_optouts': course_optouts,
+        'message': message,
+        'staff_access': staff_access,
+        'errored_courses': errored_courses,
+        'show_courseware_links_for': show_courseware_links_for,
+        'all_course_modes': course_mode_info,
+        'cert_statuses': cert_statuses,
+        'credit_statuses': _credit_statuses(user, course_enrollments),
+        # 'show_email_settings_for': show_email_settings_for,
+        'reverifications': reverifications,
+        'verification_status': verification_status,
+        'verification_status_by_course': verify_status_by_course,
+        'verification_msg': verification_msg,
+        'show_refund_option_for': show_refund_option_for,
+        'block_courses': block_courses,
+
+        'billing_email': settings.PAYMENT_SUPPORT_EMAIL,
+        'user': user,
+        # 'logout_url': reverse(logout_user),
+        'platform_name': platform_name,
+        'enrolled_courses_either_paid': enrolled_courses_either_paid,
+        'provider_states': [],
+        'nav_hidden': True,
+        # 'course_programs': course_programs,
+        'disable_courseware_js': True,
+        # 'xseries_credentials': xseries_credentials,
+        'active_page': 'discussion',
+        'discourse_url': discourse_url
+    }
+
+    ecommerce_service = EcommerceService()
+    if ecommerce_service.is_enabled(request.user):
+        context.update({
+            'use_ecommerce_payment_flow': True,
+            'ecommerce_payment_page': ecommerce_service.payment_page_url(),
+        })
+
+    return render_to_response('/discussion.html', context)
 
 def _create_recent_enrollment_message(course_enrollments, course_modes):  # pylint: disable=invalid-name
     """
